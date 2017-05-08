@@ -6,18 +6,18 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://yoursite.com">
-  <title>Effective Java | Hexo</title>
+  <title>云计算：Geo-replication | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="第一篇博客就谢谢java吧，这篇博客根据effective java和cmu的15-214: Principles of Software System Construction部分内容组合而成。">
+  <meta name="description" content="异地备份，Geo-replication，一是为了容灾，二是为了访问低延迟。但如果要保持各个备份的一致性就会有比较大的延迟。这就联系到传说中的CAP理论。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Effective Java">
-<meta property="og:url" content="http://yoursite.com/2017/04/04/Effective Java/index.html">
+<meta property="og:title" content="云计算：Geo-replication">
+<meta property="og:url" content="http://yoursite.com/2017/05/08/云计算：Geo-replication/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="第一篇博客就谢谢java吧，这篇博客根据effective java和cmu的15-214: Principles of Software System Construction部分内容组合而成。">
-<meta property="og:updated_time" content="2017-04-04T19:07:23.000Z">
+<meta property="og:description" content="异地备份，Geo-replication，一是为了容灾，二是为了访问低延迟。但如果要保持各个备份的一致性就会有比较大的延迟。这就联系到传说中的CAP理论。">
+<meta property="og:updated_time" content="2017-05-08T18:29:07.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Effective Java">
-<meta name="twitter:description" content="第一篇博客就谢谢java吧，这篇博客根据effective java和cmu的15-214: Principles of Software System Construction部分内容组合而成。">
+<meta name="twitter:title" content="云计算：Geo-replication">
+<meta name="twitter:description" content="异地备份，Geo-replication，一是为了容灾，二是为了访问低延迟。但如果要保持各个备份的一致性就会有比较大的延迟。这就联系到传说中的CAP理论。">
   
     <link rel="alternative" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -155,27 +155,38 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-Effective Java" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-云计算：Geo-replication" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      Effective Java
+      云计算：Geo-replication
     </h1>
   
 
         
-        <a href="/2017/04/04/Effective Java/" class="archive-article-date">
-  	<time datetime="2017-04-04T19:03:35.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-04-04</time>
+        <a href="/2017/05/08/云计算：Geo-replication/" class="archive-article-date">
+  	<time datetime="2017-05-08T18:27:24.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-05-08</time>
 </a>
         
       </header>
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>第一篇博客就谢谢java吧，这篇博客根据effective java和cmu的15-214: Principles of Software System Construction部分内容组合而成。</p>
+        <p>异地备份，Geo-replication，一是为了容灾，二是为了访问低延迟。但如果要保持各个备份的一致性就会有比较大的延迟。这就联系到传说中的CAP理论。</p>
+<a id="more"></a>
+<p>但是现在有人提出了ALPS理论：<br>Availability， Low Latency， Partition Tolerance， Scalability<br>每一个备份都能独立作为data center，更新在后台同步，实现eventual consistency.<br>当时在下面这篇论文里提出了一种更加高级的consistency - casual consistency with convergent conflict handing.</p>
+<blockquote>
+<p>STRONGER CONSISTENCY AND SEMANTICS FOR LOW-LATENCY GEO-REPLICATED STORAGE by WYATT ANDREW LLOYD</p>
+</blockquote>
+<h2 id="Casual-Consistency"><a href="#Casual-Consistency" class="headerlink" title="Casual Consistency"></a>Casual Consistency</h2><p>是指如果存在因果关系的事件发生顺序在每个备份里都是一样的，如果没有因果关系，就退化成eventually consistency。</p>
+<p>如何定义a和b之间存在casual的关系：<br>1，a和b是同一个线程发生的事件<br>2，b要返回a写操作后的值<br>3，a与c是casual，c与b是casual，根据传递性得到a与b是casual</p>
+<h2 id="Conflict-Handling"><a href="#Conflict-Handling" class="headerlink" title="Conflict Handling"></a>Conflict Handling</h2><p>Casual Consistency仍然有缺陷，它只规定了两个有因果关系的事件发生顺序在每个备份里是一样的，当时没有规定两个同时发生的事件。如果两个人同时往同一个地方写，就会有conflict。<br>解决的策略要不是最后一个写的覆盖掉全部，要不用更复杂的冲突解决方法。<br>另一种方法是加上version，比如用逻辑时钟。每个备份都记录log，并相互交换，最后达成一致。</p>
+<p>无论是Casual Consistency还是Conflict Handling，都要依赖机器之间的沟通甚至等待。但是依靠机器之间通信达成一致，都会有一个缺陷，叫做<strong>slowdown cascades</strong>，一台慢的机器会拖累到其他机器。于是有人提出了个叫<a href="https://www.usenix.org/conference/nsdi17/technical-sessions/presentation/mehdi" target="_blank" rel="external">OCCULT</a>的系统解决这个问题。</p>
+<p>推荐看视频，画一下重点：这个系统多了一个叫observable casual consistency。就是只要client看到的东西是casual consistency就行了，内部的我不管。</p>
+<p>它使用timestamp的方法，server有timestamp，client也有。每次读写都会更新取最大。比如存在a-&gt;b的关系，timestamp是（8，5），分别代表a和b。<br>假如在一台机的timestamp是(8,5),在另一台机的timestamp是（7，5），说明b的更新传到了，当时a还没。此时client的timestamp是(0,0)，比它们都小，因此他可以读a或b。<br>假如client读了b，他的timestamp就同步成(8,5)，那他就不能再读那台timestamp是(7,5)的机子上面的a。</p>
 
       
 
@@ -266,7 +277,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="http://s.jiathis.com/qrcode.php?url=http://yoursite.com/2017/04/04/Effective Java/" alt="微信分享二维码">
+      <img src="http://s.jiathis.com/qrcode.php?url=http://yoursite.com/2017/05/08/云计算：Geo-replication/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -280,18 +291,18 @@
   
 <nav id="article-nav">
   
-    <a href="/2017/04/04/玩玩Reddit/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2017/05/08/云计算：运行于spot price/" id="article-nav-newer" class="article-nav-link-wrap">
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          玩玩Reddit
+          云计算：运行于spot price
         
       </div>
     </a>
   
   
-    <a href="/2017/03/26/hello-world/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">Hello World</div>
+    <a href="/2017/05/08/云计算：Tail Latency/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">云计算：Tail Latency</div>
       <i class="icon-circle-right"></i>
     </a>
   
